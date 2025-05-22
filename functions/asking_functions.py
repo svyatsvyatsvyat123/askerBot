@@ -114,7 +114,6 @@ async def stop_get_file(message: types.Message, state: FSMContext):
 async def end_asking(callback: types.CallbackQuery, state: FSMContext):
     await callback.answer("Начинаю скачивание")
     async with state.proxy() as data:
-        #data["UUID"] = callback.from_user.id
         await Writer.write(data)
     await callback.message.answer(last_message)
     await state.finish()

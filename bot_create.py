@@ -11,6 +11,7 @@ ask_files_message = __text["ask_files_message"]
 check_message = __text["check_message"]
 last_message = __text["last_message"]
 file_types = __text["file_types"]
+answers_path = __text["answers_path"]
 storage = MemoryStorage()
 bot = Bot(token)
 dp = Dispatcher(bot, storage=storage)
