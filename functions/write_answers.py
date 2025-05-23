@@ -39,21 +39,33 @@ class Writer:
                 os.makedirs(f"{answers_path}/" + ''.join(path))
                 return path
             except FileExistsError:
+                file_cnt = len([_ for _ in os.listdir(f"{answers_path}/" + ''.join(path))])
+                if file_cnt == 0:
+                    return path
+                if file_cnt < 50:
+                    last = sorted([x for x in os.listdir(f"{answers_path}/" + ''.join(path))])[-1]
+                    Writer.file_name = Writer.next(list(last.split(".")[0]))
+                    return path
                 path = Writer.next(path)
 
     @staticmethod
-    async def open(bot: Bot):
+    async def open(bot: Bot, delete_answers=False):
         Writer.bot = bot
-        os.makedirs(f"{answers_path}",exist_ok=True)
+        os.makedirs(f"{answers_path}", exist_ok=True)
         try:
-            Writer.wb = load_workbook(f"{answers_path}/answers.xlsx")
+            if delete_answers:
+                Writer.wb = Workbook()
+            else:
+                Writer.wb = load_workbook(f"{answers_path}/answers.xlsx")
+                print(f"Файл {answers_path}/answers.xlsx обнаружен.")
         except FileNotFoundError:
             print(f"Файл {answers_path}/answers.xlsx не обнаружен и будет создан автоматически")
             Writer.wb = Workbook()
         try:
             Writer.sheet = Writer.wb.get_sheet_by_name("Sheet")
         except KeyError:
-            print(f"Лист Sheet не обнаружен и будет создан автоматически")
+            if not delete_answers:
+                print(f"Лист Sheet не обнаружен и будет создан автоматически")
             Writer.wb.create_sheet("Sheet")
             Writer.sheet = Writer.wb.get_sheet_by_name("Sheet")
 
@@ -61,15 +73,45 @@ class Writer:
         for i in range(len(questions)):
             if questions[i]["name"] is None:
                 continue
-            Writer.sheet[f"{''.join(c)}1"] = questions[i]["name"]
+            if Writer.sheet[f"{''.join(c)}1"].value is None:
+                Writer.sheet[f"{''.join(c)}1"] = questions[i]["name"]
+            elif Writer.sheet[f"{''.join(c)}1"].value != questions[i]["name"]:
+                res = input("В существуещем файле answers.xlsx другая разметка столбцов."
+                            "Введите (Y,yes,д,да) в любом регистре если хотите ее ОЧИСТИТЬ, или (все остальное),"
+                            " если завершить программу:\n").lower().strip()
+                if res in ("да", "y", "yes", "д"):
+                    await Writer.open(bot, True)
+                    return
+                else:
+                    Writer.wb.close()
+                    exit(0)
             Writer.char_from_query[questions[i]["name"]] = ''.join(c)
             c = Writer.next(c)
         for i in range(20):
+            if Writer.sheet[f"{''.join(c)}1"].value is None:
+                Writer.sheet[f"{''.join(c)}1"] = f"Ф{i + 1}"
+            elif Writer.sheet[f"{''.join(c)}1"].value != f"Ф{i + 1}":
+                res = input("В существуещем файле answers.xlsx другая разметка столбцов."
+                            "Введите (Y,yes,д,да) в любом регистре, если хотите ее ПЕРЕЗАПИСАТЬ, или (все остальное),"
+                            " чтобы завершить программу:\n").lower().strip()
+                if res in ("да", "y", "yes", "д"):
+                    await Writer.open(bot, True)
+                    return
+                else:
+                    Writer.wb.close()
+                    exit(0)
             Writer.sheet[f"{''.join(c)}1"] = f"Ф{i + 1}"
             Writer.char_from_query[f"Ф{i + 1}"] = ''.join(c)
             c = Writer.next(c)
         Writer.wb.save(f"{answers_path}/answers.xlsx")
         Writer.path = Writer.make_dirs(Writer.path)
+        if delete_answers:
+            print("Таблица успешно отфарматирована")
+        else:
+            i = 2
+            while Writer.sheet[f"A{i}"].value is not None:
+                Writer.last_ind += 1
+                i += 1
 
     @staticmethod
     async def write(data: dict[str, str]):
@@ -83,7 +125,6 @@ class Writer:
             Writer.sz = 0
             Writer.path = Writer.make_dirs(Writer.path)
         path = ''.join(Writer.path)
-
         Writer.sz += int(data["cnt"])
         file_name = Writer.file_name
         file_names = [''.join(Writer.file_name)]
@@ -104,6 +145,7 @@ class Writer:
         if time() - Writer.last_save_time > 300:
             Writer.last_save_time = time()
             Writer.wb.save(f"{answers_path}/answers.xlsx")
+            print("Новые данные успешно добавлены в таблицу")
 
     @staticmethod
     async def close(*args, **kwargs):

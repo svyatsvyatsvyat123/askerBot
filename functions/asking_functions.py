@@ -79,23 +79,46 @@ async def get_files(message: types.Message, state: FSMContext):
             data["files_id"] = ""
             data["files_size"] = "0.0"
             data["files_names"] = ""
-        if int(data["cnt"]) >= 20:
+        total_size = 0
+        total_cnt = 0
+        photo = None
+        if message.photo is not None and len(message.photo) > 0:
+            if "jpg" not in file_types:
+                await message.reply("Сжатые фото формата jpg запрещены для отправки. "
+                                    "Разрешенные расширения: \n{' '.join(file_types)}")
+                return
+            photo = message.photo[-1]
+            total_size += photo.file_size
+            total_cnt += 1
+        if message.document is not None:
+            if message.document.file_name.find(".") == -1:
+                await message.reply(f"У файла нет расширения. Должно быть:\n{' '.join(file_types)}")
+                return
+            name: str = message.document.file_name.split(".")[-1]
+            if name not in file_types:
+                await message.reply(f"Некорректное расширение файла({name}). Должно быть:\n{' '.join(file_types)}")
+                return
+            total_cnt += 1
+            total_size += message.document.file_size
+        if float(data["files_size"]) + total_size / 1024 / 1024 > 18:
+            await message.reply(f"Суммарный размер файлов не более 18МБ")
+            return
+        if int(data["cnt"]) + total_cnt > 20:
             await message.reply("Файлов не может быть больше 20")
             return
-        name: str = message.document.file_name.split(".")[-1]
-        if name not in file_types:
-            await message.reply(f"Некорректное расширение файла. Должно быть:\n{' '.join(file_types)}")
-        if float(data["files_size"]) + message.document.file_size / 1024 / 1024 > 18:
-            await message.reply(f"Суммарный размер файлов не более 18МБ")
-        data["files_id"] = data["files_id"] + " " + message.document.file_id
-        data["files_names"] = data["files_names"] + " " + name
-        data["cnt"] = str(int(data["cnt"]) + 1)
-        data["files_size"] = str(float(data["files_size"]) + message.document.file_size / 1024 / 1024)
+        data["cnt"] = str(int(data["cnt"]) + total_cnt)
+        data["files_size"] = str(float(data["files_size"]) + total_size / 1024 / 1024)
+        if message.document is not None:
+            data["files_id"] = data["files_id"] + " " + message.document.file_id
+            data["files_names"] = data["files_names"] + " " + name
+        if photo is not None:
+            data["files_id"] = data["files_id"] + " " + photo.file_id
+            data["files_names"] = data["files_names"] + " " + "jpg"
 
 
 async def stop_get_file(message: types.Message, state: FSMContext):
     async with state.proxy() as data:
-        if data.get("cnt","0") == "0":
+        if data.get("cnt", "0") == "0":
             await message.answer("Вы не ввели не одного файла. Отправьте файл")
             return
         await message.answer(check_message)

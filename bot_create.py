@@ -3,7 +3,7 @@ import json
 from aiogram import Bot, Dispatcher
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
-with open("settings.json", "r") as f:
+with open("settings.json", "r", encoding="UTF8") as f:
     __text = json.JSONDecoder().decode(f.read())
 token: str = __text["token"]
 questions: list[dict[str, str | list[str] | bool]] = __text["questions"]
