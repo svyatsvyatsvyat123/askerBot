@@ -76,9 +76,10 @@ class Writer:
             if Writer.sheet[f"{''.join(c)}1"].value is None:
                 Writer.sheet[f"{''.join(c)}1"] = questions[i]["name"]
             elif Writer.sheet[f"{''.join(c)}1"].value != questions[i]["name"]:
-                res = input("В существуещем файле answers.xlsx другая разметка столбцов."
-                            "Введите (Y,yes,д,да) в любом регистре если хотите ее ОЧИСТИТЬ, или (все остальное),"
-                            " если завершить программу:\n").lower().strip()
+                q = ("В существуещем файле answers.xlsx другая разметка столбцов.Введите (Y,yes,д,да) в любом регистре "
+                     "если хотите ее ОЧИСТИТЬ, или (все остальное),если завершить программу:\n")
+                q = f"\033[34m{q}"
+                res = input(q).lower().strip()
                 if res in ("да", "y", "yes", "д"):
                     await Writer.open(bot, True)
                     return
@@ -91,9 +92,10 @@ class Writer:
             if Writer.sheet[f"{''.join(c)}1"].value is None:
                 Writer.sheet[f"{''.join(c)}1"] = f"Ф{i + 1}"
             elif Writer.sheet[f"{''.join(c)}1"].value != f"Ф{i + 1}":
-                res = input("В существуещем файле answers.xlsx другая разметка столбцов."
-                            "Введите (Y,yes,д,да) в любом регистре, если хотите ее ПЕРЕЗАПИСАТЬ, или (все остальное),"
-                            " чтобы завершить программу:\n").lower().strip()
+                q = ("В существуещем файле answers.xlsx другая разметка столбцов.Введите (Y,yes,д,да) в любом регистре "
+                     "если хотите ее ОЧИСТИТЬ, или (все остальное),если завершить программу:\n")
+                q = f"\033[34m{q}"
+                res = input(q).lower().strip()
                 if res in ("да", "y", "yes", "д"):
                     await Writer.open(bot, True)
                     return
